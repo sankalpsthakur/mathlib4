@@ -67,7 +67,6 @@ only that there are finitely many objects.
 
 variable [Finite J]
 
-set_option backward.isDefEq.respectTransparency.types false in
 /-- This follows the proof from
 * Borceux, Handbook of categorical algebra 1, Theorem 2.13.4
 -/
@@ -158,7 +157,6 @@ open CategoryTheory.Prod
 
 variable [IsFiltered K]
 
-set_option backward.isDefEq.respectTransparency false in
 /-- This follows the proof from `Borceux, Handbook of categorical algebra 1, Theorem 2.13.4`
 although with different names.
 -/
