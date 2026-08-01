@@ -758,4 +758,3 @@ theorem large1 {α} [Ring α] : 2^(2^2000) + (2*2) - 2^(2^2000) = (4 : α) := by
 -- Regression test for https://github.com/leanprover-community/mathlib4/issues/28703.
 example (h : 0 = 1) (_h2 : 0 = 2) : False := by
   norm_num at h _h2
-
