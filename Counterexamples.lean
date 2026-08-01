@@ -18,7 +18,7 @@ public import Counterexamples.MapFloor
 public import Counterexamples.MonicNonRegular
 public import Counterexamples.Motzkin
 public import Counterexamples.NowhereDifferentiable
-public import Counterexamples.OrderedCancelAddCommMonoidWithBounds
+public import Counterexamples.IsOrderedCancelAddMonoidWithBounds
 public import Counterexamples.PeanoCurve
 public import Counterexamples.Phillips
 public import Counterexamples.PolynomialIsDomain
