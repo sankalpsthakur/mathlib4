@@ -21,3 +21,10 @@ set_option linter.style.header true in
 set_option doc.verso true in
 
 def foo := 37
+
+-- The header linter is a file-level check, so it should not report the same problem again.
+#guard_msgs in
+set_option linter.style.header true in
+set_option doc.verso true in
+
+def bar := 38
