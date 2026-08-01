@@ -1,0 +1,88 @@
+name: Validate nilpotent add-eq-zero lemmas
+
+on:
+  push:
+    branches:
+      - agent/add-nilpotent-add-eq-zero
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Lean toolchain
+        shell: bash
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Apply and compile the focused patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("Mathlib/RingTheory/Nilpotent/Basic.lean")
+          text = path.read_text()
+          old = """section CommSemiring
+
+          variable [CommSemiring R] {x y : R}
+
+          lemma isNilpotent_sum"""
+          new = """section CommSemiring
+
+          variable [CommSemiring R] {x y : R}
+
+          /-- In a commutative semiring, two elements whose sum is zero have equal squares. -/
+          theorem sq_eq_sq_of_add_eq_zero (h : x + y = 0) : x ^ 2 = y ^ 2 := by
+            calc
+              x ^ 2 = x ^ 2 + 0 := (add_zero _).symm
+              _ = x ^ 2 + (x * y + y ^ 2) := by
+                rw [pow_two, ← add_mul, h, zero_mul]
+              _ = (x ^ 2 + x * y) + y ^ 2 := (add_assoc _ _ _).symm
+              _ = 0 + y ^ 2 := by
+                rw [pow_two, ← mul_add, h, mul_zero]
+              _ = y ^ 2 := zero_add _
+
+          /-- If two elements of a commutative semiring sum to zero and the right one is nilpotent,
+          then so is the left one. -/
+          theorem IsNilpotent.of_add_eq_zero_left (hy : IsNilpotent y) (h : x + y = 0) :
+              IsNilpotent x := by
+            obtain ⟨n, hn⟩ := hy
+            refine ⟨2 * n, ?_⟩
+            calc
+              x ^ (2 * n) = (x ^ 2) ^ n := pow_mul x 2 n
+              _ = (y ^ 2) ^ n := by rw [sq_eq_sq_of_add_eq_zero h]
+              _ = (y ^ n) ^ 2 := by rw [← pow_mul, mul_comm, pow_mul]
+              _ = 0 := by simp [hn]
+
+          theorem isNilpotent_iff_of_add_eq_zero (h : x + y = 0) :
+              IsNilpotent x ↔ IsNilpotent y :=
+            ⟨fun hx ↦ hx.of_add_eq_zero_left (by simpa [add_comm] using h),
+              fun hy ↦ hy.of_add_eq_zero_left h⟩
+
+          lemma isNilpotent_sum"""
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f"expected one insertion point, found {count}")
+          path.write_text(text.replace(old, new))
+          PY
+
+          lake exe cache get Mathlib/RingTheory/Nilpotent/Basic.lean
+          lake build Mathlib.RingTheory.Nilpotent.Basic
+          git diff --check
+      - name: Commit validated patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/agent-validate-nilpotent-add-eq-zero.yml
+          git config user.name "Sankalp Thakur"
+          git config user.email "sankalphimself@gmail.com"
+          git add -A
+          git commit -m "feat(RingTheory): add nilpotence lemmas for zero sums"
+          git push origin HEAD:agent/add-nilpotent-add-eq-zero
