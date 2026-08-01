@@ -1,0 +1,64 @@
+name: Validate ordered-cancellation counterexample rename
+
+on:
+  push:
+    branches:
+      - agent/rename-ordered-cancel-counterexample
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Lean toolchain
+        shell: bash
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Rename module and compile forwarding import
+        shell: bash
+        run: |
+          set -euo pipefail
+          old_file=Counterexamples/OrderedCancelAddCommMonoidWithBounds.lean
+          new_file=Counterexamples/IsOrderedCancelAddMonoidWithBounds.lean
+          test -f "$old_file"
+          test ! -e "$new_file"
+          mv "$old_file" "$new_file"
+          cat > "$old_file" <<'LEAN'
+          module
+
+          public import Counterexamples.IsOrderedCancelAddMonoidWithBounds
+
+          deprecated_module "Use `Counterexamples.IsOrderedCancelAddMonoidWithBounds` instead."
+            (since := "2026-08-02")
+          LEAN
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("Counterexamples.lean")
+          text = path.read_text()
+          old = "public import Counterexamples.OrderedCancelAddCommMonoidWithBounds"
+          new = "public import Counterexamples.IsOrderedCancelAddMonoidWithBounds"
+          if text.count(old) != 1:
+              raise SystemExit(f"expected one aggregate import, found {text.count(old)}")
+          path.write_text(text.replace(old, new))
+          PY
+          lake exe cache get Counterexamples/IsOrderedCancelAddMonoidWithBounds.lean Counterexamples/OrderedCancelAddCommMonoidWithBounds.lean Counterexamples.lean
+          lake env lean Counterexamples/IsOrderedCancelAddMonoidWithBounds.lean
+          lake env lean Counterexamples/OrderedCancelAddCommMonoidWithBounds.lean
+          lake env lean Counterexamples.lean
+          git diff --check
+      - name: Commit validated rename
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/agent-rename-ordered-counterexample.yml
+          git config user.name "Sankalp Thakur"
+          git config user.email "sankalphimself@gmail.com"
+          git add -A
+          git commit -m "refactor(Counterexamples): rename ordered cancellation example"
+          git push origin HEAD:agent/rename-ordered-cancel-counterexample
