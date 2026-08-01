@@ -256,4 +256,3 @@ end MyNat
 example (n : ℤ) (hn : n ≥ 0) : True := by
   lift n to MyNat using hn
   exact n.isTrue
-
