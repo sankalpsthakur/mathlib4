@@ -37,18 +37,15 @@ It emits a warning if
 The linter allows `import`-only files and does not require a copyright statement in `Mathlib.Init`.
 
 ## Implementation
-The strategy used by the linter is as follows.
-The linter computes the end position of the first module doc-string of the file,
-resorting to the end of the file, if there is no module doc-string.
-Next, the linter tries to parse the file up to the position determined above.
+The linter performs its file-level check at most once, on the first non-terminal command for which
+it is enabled. If the file has a module doc-string, it parses through the first such doc-string.
+If there is no module doc-string, it parses only the import header followed by a sentinel `section`.
+This is enough to report the missing doc-string without reparsing an arbitrary later document body.
 
-If the parsing is successful, the linter checks the resulting `Syntax` and behaves accordingly.
-
-If the parsing is not successful, this already means there is some "problematic" command
-after the imports. In particular, there is a command that is not a module doc-string
-immediately following the last import: the file should be flagged by the linter.
-Hence, the linter then falls back to parsing the header of the file, adding a spurious `section`
-after it.
+If parsing through the first module doc-string is not successful, this already means there is some
+"problematic" command after the imports. In particular, there is a command that is not a module
+doc-string immediately following the last import: the file should be flagged by the linter.
+Hence, the linter falls back to parsing the header of the file, adding a spurious `section` after it.
 This makes it possible for the linter to check the entire header of the file, emit warnings that
 could arise from this part and also flag that the file should contain a module doc-string after
 the `import` statements.
@@ -376,6 +373,9 @@ def headerTestFiles : NameSet := .ofList
   [`MathlibTest.Linter.Header.Basic, `MathlibTest.Linter.Header.Fail, `MathlibTest.Linter.Header.Verso,
   `MathlibTest.DirectoryDependencyLinter.Test]
 
+/-- Whether the file-level header check has already run in the current elaboration. -/
+initialize headerLinterHasRunMutex : Std.Mutex Bool ← Std.Mutex.new false
+
 @[inherit_doc Mathlib.Linter.linter.style.header]
 def headerLinter : Linter where run := withSetOptionIn fun stx ↦ do
   let mainModule ← getMainModule
@@ -400,29 +400,38 @@ def headerLinter : Linter where run := withSetOptionIn fun stx ↦ do
   -- In practice, the `inLibraryRoot?` check above already covers this (a well-formed `<root>.lean`
   -- does not import itself), but a root module could appear in `headerTestFiles`.
   if mainModule == mainModule.getRoot then return
+  -- Import-only files are valid, so there is no file-level check to run at end-of-input.
+  if Parser.isTerminalCommand stx then return
+  -- Deprecated module files are import-redirect stubs and are exempt from all header checks.
+  if stx.isOfKind ``Lean.Parser.Command.deprecated_module then return
+  let hasRun ← headerLinterHasRunMutex.atomically do
+    if ← get then
+      return true
+    set true
+    return false
+  if hasRun then return
   let fm ← getFileMap
   let mdDocs := (getMainModuleDoc (← getEnv)).toArray
   let versoDocs := (getMainVersoModuleDocs (← getEnv)).snippets
-  -- The end of the first module doc-string, or the end of the file if there is none.
-  -- For robustness, we assume Markdown and Verso docstrings can be arbitrarily mixed,
-  -- so we get the end pos for both types of docstrings and take their minimum as the first.
-  let firstMDDocModPos := match mdDocs[0]? with
-  | none     => fm.positions.back!
-  | some doc => fm.ofPosition doc.declarationRange.endPos
-  let firstVersoDocModPos := match versoDocs[0]? with
-  | none     => fm.positions.back!
-  | some doc => fm.ofPosition doc.declarationRange.endPos
-  let firstDocModPos := min firstMDDocModPos firstVersoDocModPos
-  unless stx.getTailPos?.getD default ≤ firstDocModPos do
-    return
-  -- We try to parse the file up to `firstDocModPos`.
-  let upToStx ← parseUpToHere firstDocModPos <|> (do
-    -- If parsing failed, there is some command which is not a module docstring.
-    -- In that case, we parse until the end of the imports and add an extra `section` afterwards,
-    -- so we trigger a "no module doc-string" warning.
+  -- The end of the first module doc-string, if there is one. For robustness, we assume Markdown
+  -- and Verso docstrings can be arbitrarily mixed and take the earlier of the two.
+  let firstDocModPos? := match mdDocs[0]?, versoDocs[0]? with
+    | none, none => none
+    | some doc, none => some <| fm.ofPosition doc.declarationRange.endPos
+    | none, some doc => some <| fm.ofPosition doc.declarationRange.endPos
+    | some mdDoc, some versoDoc => some <| min
+        (fm.ofPosition mdDoc.declarationRange.endPos)
+        (fm.ofPosition versoDoc.declarationRange.endPos)
+  if let some firstDocModPos := firstDocModPos? then
+    unless stx.getTailPos?.getD default ≤ firstDocModPos do
+      return
+  let parseImportHeader : CommandElabM Syntax := do
     let fil ← getFileName
-    let (stx, _) ← Parser.parseHeader { inputString := fm.source, fileName := fil, fileMap := fm }
-    parseUpToHere (stx.raw.getTailPos?.getD default) "\nsection")
+    let (headerStx, _) ← Parser.parseHeader { inputString := fm.source, fileName := fil, fileMap := fm }
+    parseUpToHere (headerStx.raw.getTailPos?.getD default) "\nsection"
+  let upToStx ← match firstDocModPos? with
+    | some firstDocModPos => parseUpToHere firstDocModPos <|> parseImportHeader
+    | none => parseImportHeader
   let importIds := getImportIds upToStx
   let imports := getImports upToStx
   let afterImports := firstNonImport? upToStx
