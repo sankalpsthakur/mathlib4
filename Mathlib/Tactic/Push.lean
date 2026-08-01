@@ -51,6 +51,7 @@ attribute [push low]
   forall_and_left forall_and_right -- needs lower priority than `forall_and` in the `pull` tactic
 
 attribute [push ←] Function.id_def
+attribute [pull] Function.comp_def
 
 -- TODO: decide if we want this lemma, and if so, fix the proofs that break as a result
 -- @[push high] theorem Nat.not_nonneg_iff_eq_zero (n : Nat) : ¬ 0 < n ↔ n = 0 :=

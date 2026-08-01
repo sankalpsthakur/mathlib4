@@ -84,6 +84,30 @@ initialize pullExt : SimpleScopedEnvExtension PullTheorem (DiscrTree PullTheorem
   }
 
 /--
+The `pull` attribute tags a lemma for use by the `pull` tactic without also making it a `push`
+lemma. The theorem should already be oriented in the direction used by `pull`.
+
+For example, tagging `Function.comp_def` with `@[pull]` lets `pull fun _ ↦ _` eta-expand a
+composition without making the reverse rewrite available to `push`.
+-/
+syntax (name := pullAttr) "pull" (ppSpace prio)? : attr
+
+@[inherit_doc pullAttr]
+initialize registerBuiltinAttribute {
+  name := `pullAttr
+  descr := "one-way attribute for pull"
+  add := fun declName stx _kind => MetaM.run' do
+    -- Make sure `mkSimpTheoremFromConst` aux declarations are sufficiently visible, as for `simp`.
+    withExporting (isExporting := !isPrivateName declName) do
+    let prio ← getAttrParamOptPrio stx[1]
+    let some head ← isPullThm declName false |
+      throwError "the theorem is not suitable for `pull`"
+    let #[thm] ← mkSimpTheoremFromConst declName (prio := prio) |
+      throwError "couldn't generate a simp theorem for `pull`"
+    pullExt.add (thm, head)
+}
+
+/--
 The `push` attribute is used to tag lemmas that "push" a constant into an expression.
 
 For example:

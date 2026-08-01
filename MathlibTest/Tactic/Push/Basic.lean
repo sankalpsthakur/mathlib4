@@ -66,6 +66,16 @@ info: DiscrTree branch for Or:
 
 end logic
 
+section composition
+
+variable {β γ : Type*} (f : α → β) (g : β → γ)
+
+/-- info: fun x => g (f x) -/
+#guard_msgs in
+#pull fun _ ↦ _ => g ∘ f
+
+end composition
+
 section lambda
 
 example : (fun x : ℕ ↦ x ^ 2 + 1 * 0 - 5 • 6) = id ^ 2 + 1 * 0 - 5 • 6 := by
