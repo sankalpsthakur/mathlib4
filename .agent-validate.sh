@@ -37,15 +37,8 @@ PY
 fi
 
 if [ "$status" -eq 0 ]; then
-  lake env lean "$new_file" >> "$log" 2>&1
-  status=$?
-fi
-if [ "$status" -eq 0 ]; then
-  lake env lean "$old_file" >> "$log" 2>&1
-  status=$?
-fi
-if [ "$status" -eq 0 ]; then
-  lake env lean Counterexamples.lean >> "$log" 2>&1
+  lake build Counterexamples.IsOrderedCancelAddMonoidWithBounds \
+    Counterexamples.OrderedCancelAddCommMonoidWithBounds >> "$log" 2>&1
   status=$?
 fi
 if [ "$status" -eq 0 ]; then
