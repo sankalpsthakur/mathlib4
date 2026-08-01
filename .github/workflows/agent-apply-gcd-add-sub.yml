@@ -28,10 +28,10 @@ jobs:
             exit 0
           fi
           python3 .agent-patch.py
-          lake build Mathlib.RingTheory.Coprime.Lemmas
+          lake build Mathlib.RingTheory.Int.Basic
           rm -f .agent-patch.py .github/workflows/agent-apply-gcd-add-sub.yml
           git config user.name "Sankalp Thakur"
           git config user.email "sankalphimself@gmail.com"
           git add -A
-          git commit -m "feat(RingTheory): gcd of a coprime sum and difference"
+          git commit -m "feat(RingTheory): coprimality of a sum and difference"
           git push origin HEAD:"${GITHUB_REF_NAME}"
