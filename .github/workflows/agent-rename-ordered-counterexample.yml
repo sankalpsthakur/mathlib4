@@ -15,15 +15,16 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - name: Install Lean toolchain
-        shell: bash
-        run: |
-          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
-          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Configure Lean
+        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9
+        with:
+          auto-config: false
+          use-github-cache: false
+          use-mathlib-cache: true
       - name: Rename module and compile forwarding import
         shell: bash
         run: |
@@ -51,7 +52,6 @@ jobs:
               raise SystemExit(f"expected one aggregate import, found {text.count(old)}")
           path.write_text(text.replace(old, new))
           PY
-          lake exe cache get Counterexamples/IsOrderedCancelAddMonoidWithBounds.lean Counterexamples/OrderedCancelAddCommMonoidWithBounds.lean Counterexamples.lean
           lake env lean Counterexamples/IsOrderedCancelAddMonoidWithBounds.lean
           lake env lean Counterexamples/OrderedCancelAddCommMonoidWithBounds.lean
           lake env lean Counterexamples.lean
@@ -66,3 +66,5 @@ jobs:
           git add -A
           git commit -m "refactor(Counterexamples): rename ordered cancellation example"
           git push --force origin HEAD:agent/rename-ordered-cancel-counterexample
+
+# Retrigger after attaching the branch to a draft PR.
