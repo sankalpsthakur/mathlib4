@@ -5,7 +5,6 @@ Authors: Moritz Doll, Kalle Kytölä
 -/
 module
 
-public import Mathlib.Analysis.Normed.Module.Basic
 public import Mathlib.LinearAlgebra.SesquilinearForm.Basic
 public import Mathlib.Topology.Algebra.Module.Spaces.WeakBilin
 
