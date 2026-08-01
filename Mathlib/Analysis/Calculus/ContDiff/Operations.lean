@@ -812,26 +812,25 @@ theorem ContDiff.inv {f : E → 𝕜'} (hf : ContDiff 𝕜 n f) (h : ∀ x, f x 
     ContDiff 𝕜 n f⁻¹ := by
   rw [contDiff_iff_contDiffAt]; exact fun x => hf.contDiffAt.inv (h x)
 
--- TODO: generalize to `f g : E → 𝕜'`
 @[to_fun (attr := fun_prop)]
-theorem ContDiffWithinAt.div {f g : E → 𝕜} {n} (hf : ContDiffWithinAt 𝕜 n f s x)
+theorem ContDiffWithinAt.div {f g : E → 𝕜'} {n} (hf : ContDiffWithinAt 𝕜 n f s x)
     (hg : ContDiffWithinAt 𝕜 n g s x) (hx : g x ≠ 0) :
     ContDiffWithinAt 𝕜 n (f / g) s x := by
   change ContDiffWithinAt 𝕜 n (fun x => f x / g x) s x
   simpa only [div_eq_mul_inv] using hf.mul (hg.fun_inv hx)
 
 @[to_fun (attr := fun_prop)]
-theorem ContDiffOn.div {f g : E → 𝕜} {n} (hf : ContDiffOn 𝕜 n f s)
+theorem ContDiffOn.div {f g : E → 𝕜'} {n} (hf : ContDiffOn 𝕜 n f s)
     (hg : ContDiffOn 𝕜 n g s) (h₀ : ∀ x ∈ s, g x ≠ 0) : ContDiffOn 𝕜 n (f / g) s := fun x hx =>
   (hf x hx).div (hg x hx) (h₀ x hx)
 
 @[to_fun (attr := fun_prop)]
-nonrec theorem ContDiffAt.div {f g : E → 𝕜} {n} (hf : ContDiffAt 𝕜 n f x)
+nonrec theorem ContDiffAt.div {f g : E → 𝕜'} {n} (hf : ContDiffAt 𝕜 n f x)
     (hg : ContDiffAt 𝕜 n g x) (hx : g x ≠ 0) : ContDiffAt 𝕜 n (f / g) x :=
   hf.div hg hx
 
 @[to_fun (attr := fun_prop)]
-theorem ContDiff.div {f g : E → 𝕜} {n} (hf : ContDiff 𝕜 n f) (hg : ContDiff 𝕜 n g)
+theorem ContDiff.div {f g : E → 𝕜'} {n} (hf : ContDiff 𝕜 n f) (hg : ContDiff 𝕜 n g)
     (h0 : ∀ x, g x ≠ 0) : ContDiff 𝕜 n (f / g) := by
   simp only [contDiff_iff_contDiffAt] at *
   exact fun x => (hf x).div (hg x) (h0 x)
