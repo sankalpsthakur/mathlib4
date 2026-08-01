@@ -58,3 +58,5 @@ jobs:
           git push origin HEAD:"${GITHUB_REF_NAME}"
           cat .agent-build.log
           exit "$build_status"
+
+# Retrigger after attaching the branch to a draft PR.
