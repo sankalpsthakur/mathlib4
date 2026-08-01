@@ -1,0 +1,60 @@
+name: Apply and test continuous-linear-equivalence negation
+
+on:
+  push:
+    branches:
+      - agent/continuous-linear-equiv-neg
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+      - name: Configure Lean
+        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9
+        with:
+          auto-config: false
+          use-github-cache: false
+          use-mathlib-cache: true
+      - name: Apply patch, build targets, and finalize branch
+        shell: bash
+        run: |
+          set +e
+          if [ ! -f .agent-patch.py ]; then
+            exit 0
+          fi
+
+          python3 .agent-patch.py > .agent-build.log 2>&1
+          patch_status=$?
+          if [ "$patch_status" -eq 0 ]; then
+            lake build Mathlib.Topology.Algebra.Module.Equiv Mathlib.Analysis.Calculus.ContDiff.Operations >> .agent-build.log 2>&1
+            build_status=$?
+          else
+            build_status=$patch_status
+          fi
+
+          git config user.name "Sankalp Thakur"
+          git config user.email "sankalphimself@gmail.com"
+
+          if [ "$build_status" -eq 0 ]; then
+            rm -f .agent-build.log .agent-patch.py .github/workflows/agent-apply-continuous-linear-equiv-neg.yml
+            git add -A
+            git commit -m "feat(Topology): negate continuous linear equivalences"
+            git push origin HEAD:"${GITHUB_REF_NAME}"
+            exit 0
+          fi
+
+          cp .agent-build.log /tmp/agent-build.log
+          git reset --hard HEAD
+          cp /tmp/agent-build.log .agent-build.log
+          rm -f .github/workflows/agent-apply-continuous-linear-equiv-neg.yml
+          git add .agent-build.log .github/workflows/agent-apply-continuous-linear-equiv-neg.yml
+          git commit -m "chore: record continuous linear equivalence build failure"
+          git push origin HEAD:"${GITHUB_REF_NAME}"
+          cat .agent-build.log
+          exit "$build_status"
