@@ -45,13 +45,14 @@ jobs:
           /-- In a commutative semiring, two elements whose sum is zero have equal squares. -/
           theorem sq_eq_sq_of_add_eq_zero (h : x + y = 0) : x ^ 2 = y ^ 2 := by
             calc
-              x ^ 2 = x ^ 2 + 0 := (add_zero _).symm
-              _ = x ^ 2 + (x * y + y ^ 2) := by
-                rw [pow_two, ← add_mul, h, zero_mul]
-              _ = (x ^ 2 + x * y) + y ^ 2 := (add_assoc _ _ _).symm
-              _ = 0 + y ^ 2 := by
-                rw [pow_two, ← mul_add, h, mul_zero]
-              _ = y ^ 2 := zero_add _
+              x ^ 2 = x * x := pow_two x
+              _ = x * x + 0 := (add_zero _).symm
+              _ = x * x + (x + y) * y := by rw [h, zero_mul]
+              _ = (x * x + x * y) + y * y := by rw [add_mul, ← add_assoc]
+              _ = x * (x + y) + y * y := by rw [mul_add]
+              _ = 0 + y * y := by rw [h, mul_zero]
+              _ = y * y := zero_add _
+              _ = y ^ 2 := (pow_two y).symm
 
           /-- If two elements of a commutative semiring sum to zero and the right one is nilpotent,
           then so is the left one. -/
