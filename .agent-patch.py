@@ -16,10 +16,12 @@ test = test_path.read_text()
 regressions = r'''
 
 /--
-warning: `simp at h` is a flexible tactic modifying `h`.
+warning: `simp at h` is a flexible tactic modifying `h`. Try `simp?` and use the suggested `simp only [...]`. Alternatively, use `suffices` to explicitly state the simplified form.
+
+Note: This linter can be disabled with `set_option linter.flexible false`
 ---
 info: `exact h.right`
-uses `h`, which was modified
+uses `h`, which was modified by the flexible tactic `simp` on line
 -/
 #guard_msgs (substring := true) in
 example {x₁ x₂ : Nat} {l₁ l₂ : List Nat} (h : x₁ :: l₁ = x₂ :: l₂) : l₁ = l₂ := by
@@ -27,10 +29,12 @@ example {x₁ x₂ : Nat} {l₁ l₂ : List Nat} (h : x₁ :: l₁ = x₂ :: l�
   exact h.right
 
 /--
-warning: `simp at h` is a flexible tactic modifying `h`.
+warning: `simp at h` is a flexible tactic modifying `h`. Try `simp?` and use the suggested `simp only [...]`. Alternatively, use `suffices` to explicitly state the simplified form.
+
+Note: This linter can be disabled with `set_option linter.flexible false`
 ---
 info: `have h' := h.right`
-uses `h`, which was modified
+uses `h`, which was modified by the flexible tactic `simp` on line
 -/
 #guard_msgs (substring := true) in
 example {x₁ x₂ : Nat} {l₁ l₂ : List Nat} (h : x₁ :: l₁ = x₂ :: l₂) : l₁ = l₂ := by
