@@ -1,0 +1,35 @@
+name: Validate agent contribution branches
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'agent/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Configure Lean
+        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9
+        with:
+          auto-config: false
+          use-github-cache: false
+          use-mathlib-cache: true
+      - name: Validate and finalize branch
+        shell: bash
+        env:
+          AGENT_BRANCH: ${{ github.head_ref }}
+        run: |
+          if [ ! -f .agent-validate.sh ]; then
+            echo "No agent validation script on this branch."
+            exit 0
+          fi
+          bash .agent-validate.sh
