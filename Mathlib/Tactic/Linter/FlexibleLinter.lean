@@ -214,7 +214,8 @@ Whether or not what this function extracts really is a location will be determin
 using data embedded in the `InfoTree`s. -/
 partial def toStained : Syntax → Std.HashSet Stained
   | .node _ _ arg => (arg.map toStained).foldl (.union) {}
-  | .ident _ _ val _ => {.name val}
+  | .ident _ _ val _ =>
+    ({.name val} : Std.HashSet Stained).insert (.name val.getRoot)
   | .atom _ val => match val with
                   | "*" => {.wildcard}
                   | "⊢" => {.goal}

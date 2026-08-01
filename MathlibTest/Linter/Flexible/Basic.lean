@@ -520,3 +520,31 @@ end
   let h := mkIdent `h
   let hc ← `(Lean.Parser.Tactic.elimTarget|$h:ident)
   IO.println s!"{(toStained (← `(tactic| cases $hc))).toArray}"
+
+/--
+warning: `simp at h` is a flexible tactic modifying `h`. Try `simp?` and use the suggested `simp only [...]`. Alternatively, use `suffices` to explicitly state the simplified form.
+
+Note: This linter can be disabled with `set_option linter.flexible false`
+---
+info: `exact h.right`
+uses `h`, which was modified by the flexible tactic `simp` on line
+-/
+#guard_msgs (substring := true) in
+example {x₁ x₂ : Nat} {l₁ l₂ : List Nat} (h : x₁ :: l₁ = x₂ :: l₂) : l₁ = l₂ := by
+  simp at h
+  exact h.right
+
+/--
+warning: `simp at h` is a flexible tactic modifying `h`. Try `simp?` and use the suggested `simp only [...]`. Alternatively, use `suffices` to explicitly state the simplified form.
+
+Note: This linter can be disabled with `set_option linter.flexible false`
+---
+info: `have h' := h.right`
+uses `h`, which was modified by the flexible tactic `simp` on line
+-/
+#guard_msgs (substring := true) in
+example {x₁ x₂ : Nat} {l₁ l₂ : List Nat} (h : x₁ :: l₁ = x₂ :: l₂) : l₁ = l₂ := by
+  simp at h
+  have h' := h.right
+  exact h'
+
