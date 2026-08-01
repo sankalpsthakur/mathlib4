@@ -1,0 +1,47 @@
+name: Validate Polar import cleanup
+
+on:
+  push:
+    branches:
+      - agent/remove-polar-import-v2
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Lean toolchain
+        shell: bash
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Remove import and compile module
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("Mathlib/Analysis/LocallyConvex/Polar.lean")
+          text = path.read_text()
+          old = "public import Mathlib.Analysis.Normed.Module.Basic\n"
+          if text.count(old) != 1:
+              raise SystemExit(f"expected one import, found {text.count(old)}")
+          path.write_text(text.replace(old, ""))
+          PY
+          lake exe cache get Mathlib/Analysis/LocallyConvex/Polar.lean
+          lake build Mathlib.Analysis.LocallyConvex.Polar
+          git diff --check
+      - name: Commit validated patch
+        shell: bash
+        run: |
+          rm .github/workflows/agent-remove-polar-import.yml
+          git config user.name "Sankalp Thakur"
+          git config user.email "sankalphimself@gmail.com"
+          git add -A
+          git commit -m "chore(Analysis): remove redundant Polar import"
+          git push origin HEAD:agent/remove-polar-import-v2
