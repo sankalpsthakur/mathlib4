@@ -41,7 +41,8 @@ if end < 0:
     raise SystemExit("could not find the next negation theorem")
 replacement = """theorem iteratedFDerivWithin_neg_apply {f : E → F} (hu : UniqueDiffOn 𝕜 s) (hx : x ∈ s) :
     iteratedFDerivWithin 𝕜 i (-f) s x = -iteratedFDerivWithin 𝕜 i f s x := by
-  simpa [Function.comp_def] using
-    (-(ContinuousLinearEquiv.refl 𝕜 F)).iteratedFDerivWithin_comp_left f hu hx i
+  change iteratedFDerivWithin 𝕜 i ((-ContinuousLinearEquiv.refl 𝕜 F) ∘ f) s x = _
+  rw [(-ContinuousLinearEquiv.refl 𝕜 F).iteratedFDerivWithin_comp_left f hu hx i]
+  rfl
 """
 ops_path.write_text(ops[:start] + replacement + ops[end:])
