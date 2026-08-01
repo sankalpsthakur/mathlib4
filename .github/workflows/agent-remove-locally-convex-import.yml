@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/remove-locally-convex-import-v2
+  pull_request:
+    branches:
+      - master
 
 permissions:
   contents: write
@@ -37,11 +40,14 @@ jobs:
           lake build Mathlib.Analysis.LocallyConvex.Basic
           git diff --check
       - name: Commit validated patch
+        if: github.event_name == 'push'
         shell: bash
         run: |
           rm .github/workflows/agent-remove-locally-convex-import.yml
           git config user.name "Sankalp Thakur"
           git config user.email "sankalphimself@gmail.com"
+          git fetch origin master
           git add -A
+          git reset --soft origin/master
           git commit -m "chore(Analysis): remove redundant LocallyConvex import"
-          git push origin HEAD:agent/remove-locally-convex-import-v2
+          git push --force origin HEAD:agent/remove-locally-convex-import-v2
