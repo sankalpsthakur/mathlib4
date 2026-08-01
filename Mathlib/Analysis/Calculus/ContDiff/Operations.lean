@@ -270,23 +270,11 @@ theorem ContDiffOn.neg {s : Set E} {f : E → F} (hf : ContDiffOn 𝕜 n f s) :
 
 variable {i : ℕ}
 
--- TODO: define `Neg` instance on `ContinuousLinearEquiv`,
--- prove it from `ContinuousLinearEquiv.iteratedFDerivWithin_comp_left`
 theorem iteratedFDerivWithin_neg_apply {f : E → F} (hu : UniqueDiffOn 𝕜 s) (hx : x ∈ s) :
     iteratedFDerivWithin 𝕜 i (-f) s x = -iteratedFDerivWithin 𝕜 i f s x := by
-  induction i generalizing x with ext h
-  | zero => simp
-  | succ i hi =>
-    calc
-      iteratedFDerivWithin 𝕜 (i + 1) (-f) s x h =
-          fderivWithin 𝕜 (iteratedFDerivWithin 𝕜 i (-f) s) s x (h 0) (Fin.tail h) :=
-        iteratedFDerivWithin_succ_apply_left _
-      _ = fderivWithin 𝕜 (-iteratedFDerivWithin 𝕜 i f s) s x (h 0) (Fin.tail h) := by
-        rw [fderivWithin_congr' (@hi) hx, Pi.neg_def]
-      _ = -(fderivWithin 𝕜 (iteratedFDerivWithin 𝕜 i f s) s) x (h 0) (Fin.tail h) := by
-        rw [fderivWithin_neg (hu x hx), neg_apply, neg_apply]
-      _ = -(iteratedFDerivWithin 𝕜 (i + 1) f s) x h := by
-        rw [iteratedFDerivWithin_succ_apply_left]
+  change iteratedFDerivWithin 𝕜 i ((-ContinuousLinearEquiv.refl 𝕜 F) ∘ f) s x = _
+  rw [(-ContinuousLinearEquiv.refl 𝕜 F).iteratedFDerivWithin_comp_left f hu hx i]
+  rfl
 
 theorem iteratedFDeriv_neg_apply {i : ℕ} {f : E → F} :
     iteratedFDeriv 𝕜 i (-f) x = -iteratedFDeriv 𝕜 i f x := by

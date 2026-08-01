@@ -983,6 +983,21 @@ theorem coe_neg [ContinuousNeg M] :
 theorem neg_apply [ContinuousNeg M] (x : M) :
     neg R x = -x := by simp
 
+section NegInstance
+
+variable {R₄ : Type*} [Semiring R₄]
+  {N₁ N₂ : Type*} [TopologicalSpace N₁] [AddCommMonoid N₁] [Module R₄ N₁]
+  [TopologicalSpace N₂] [AddCommGroup N₂] [Module R₄ N₂] [ContinuousNeg N₂]
+
+/-- Pointwise negation of a continuous linear equivalence. -/
+instance : Neg (N₁ ≃L[R₄] N₂) where
+  neg e := e.trans (neg R₄)
+
+@[simp]
+theorem coe_neg_apply (e : N₁ ≃L[R₄] N₂) (x : N₁) : (-e) x = -e x := rfl
+
+end NegInstance
+
 @[simp]
 theorem symm_neg [ContinuousNeg M] :
     (neg R : M ≃L[R] M).symm = neg R := rfl
