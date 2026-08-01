@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/rename-ordered-cancel-counterexample
+  pull_request:
+    branches:
+      - master
 
 permissions:
   contents: write
@@ -15,6 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Install Lean toolchain
         shell: bash
         run: |
@@ -61,4 +65,4 @@ jobs:
           git config user.email "sankalphimself@gmail.com"
           git add -A
           git commit -m "refactor(Counterexamples): rename ordered cancellation example"
-          git push origin HEAD:agent/rename-ordered-cancel-counterexample
+          git push --force origin HEAD:agent/rename-ordered-cancel-counterexample
