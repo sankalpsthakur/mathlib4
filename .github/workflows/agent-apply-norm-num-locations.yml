@@ -24,14 +24,37 @@ jobs:
       - name: Apply patch, build regression, and finalize branch
         shell: bash
         run: |
+          set +e
           if [ ! -f .agent-patch.py ]; then
             exit 0
           fi
-          python3 .agent-patch.py
-          lake build MathlibTest.Tactic.NormNum.Basic
-          rm -f .agent-patch.py .github/workflows/agent-apply-norm-num-locations.yml
+
+          python3 .agent-patch.py > .agent-build.log 2>&1
+          patch_status=$?
+          if [ "$patch_status" -eq 0 ]; then
+            lake build MathlibTest.Tactic.NormNum.Basic >> .agent-build.log 2>&1
+            build_status=$?
+          else
+            build_status=$patch_status
+          fi
+
           git config user.name "Sankalp Thakur"
           git config user.email "sankalphimself@gmail.com"
-          git add -A
-          git commit -m "fix(NormNum): stop after a location closes the goal"
+
+          if [ "$build_status" -eq 0 ]; then
+            rm -f .agent-build.log .agent-patch.py .github/workflows/agent-apply-norm-num-locations.yml
+            git add -A
+            git commit -m "fix(NormNum): stop after a location closes the goal"
+            git push origin HEAD:"${GITHUB_REF_NAME}"
+            exit 0
+          fi
+
+          cp .agent-build.log /tmp/agent-build.log
+          git reset --hard HEAD
+          cp /tmp/agent-build.log .agent-build.log
+          rm -f .github/workflows/agent-apply-norm-num-locations.yml
+          git add .agent-build.log .github/workflows/agent-apply-norm-num-locations.yml
+          git commit -m "chore: record norm_num branch build failure"
           git push origin HEAD:"${GITHUB_REF_NAME}"
+          cat .agent-build.log
+          exit "$build_status"
